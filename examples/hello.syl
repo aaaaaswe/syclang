@@ -1,0 +1,6 @@
+// Hello World in SysLang
+
+fn main() -> i32 {
+    print("Hello, World!\n");
+    return 0;
+}

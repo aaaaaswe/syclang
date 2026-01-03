@@ -1,0 +1,29 @@
+// EFI Hello World Application
+// This is a simplified EFI application example
+
+extern fn efi_main(
+    image_handle: *EFI_HANDLE,
+    system_table: *EFI_SYSTEM_TABLE
+) -> EFI_STATUS {
+    
+    let status: EFI_STATUS;
+    
+    // Print to console
+    status = efi_print(system_table, "Hello from EFI!\n");
+    
+    return status;
+}
+
+// EFI Types
+struct EFI_HANDLE {}
+struct EFI_SYSTEM_TABLE {
+    con_out: *EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL
+}
+
+struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
+    output_string: *fn(*EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL, *u16) -> EFI_STATUS
+}
+
+type EFI_STATUS = u32;
+
+extern fn efi_print(table: *EFI_SYSTEM_TABLE, str: *u8) -> EFI_STATUS;

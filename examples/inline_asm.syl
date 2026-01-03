@@ -1,0 +1,25 @@
+// Example of inline assembly in SysLang
+
+fn add_numbers(a: i32, b: i32) -> i32 {
+    let result: i32;
+    
+    asm volatile (
+        "add %0, %1, %2"
+        : "=r"(result)
+        : "r"(a), "r"(b)
+        : "cc"
+    );
+    
+    return result;
+}
+
+fn main() -> i32 {
+    let x: i32 = 5;
+    let y: i32 = 3;
+    let sum: i32 = add_numbers(x, y);
+    
+    print_int(sum);
+    print("\n");
+    
+    return 0;
+}
