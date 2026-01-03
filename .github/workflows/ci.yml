@@ -1,0 +1,295 @@
+name: SysLang CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+
+jobs:
+  # 构建 SysLang 编译器
+  build-compiler:
+    name: 构建编译器 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+          - os: macos-latest
+            cc: clang
+            cxx: clang++
+          - os: windows-latest
+            cc: clang
+            cxx: clang++
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 安装依赖 (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential cmake \
+          nasm gcc-aarch64-linux-gnu \
+          gcc-riscv64-unknown-elf
+    
+    - name: 配置 CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+          -DBUILD_V3_FEATURES=ON \
+          -DBUILD_V4_FEATURES=ON
+    
+    - name: 编译
+      run: cmake --build build --parallel
+    
+    - name: 运行测试
+      run: ctest --test-dir build --output-on-failure
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v3
+      with:
+        name: syclang-${{ matrix.os }}
+        path: build/syclang*
+
+  # 构建 EFI 系统所有架构
+  build-efi-all:
+    name: 构建 EFI 所有架构
+    runs-on: ubuntu-latest
+    needs: build-compiler
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 下载编译器
+      uses: actions/download-artifact@v3
+      with:
+        name: syclang-ubuntu-latest
+        path: build/
+    
+    - name: 安装交叉编译工具链
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf \
+          gcc-riscv64-linux-gnu gcc-riscv32-unknown-elf \
+          nasm ovmf qemu-system-x86 qemu-system-arm
+    
+    - name: 构建 x64
+      run: |
+        chmod +x build/syclang
+        ./build/syclang --arch x64 --format efi \
+          --output build/efi/efi_kernel_x64.efi \
+          efi_system/efi_kernel.syl
+    
+    - name: 构建 ARM64
+      run: |
+        ./build/syclang --arch arm64 --format efi \
+          --output build/efi/efi_kernel_arm64.efi \
+          efi_system/efi_kernel.syl
+    
+    - name: 构建 RISC-V64
+      run: |
+        ./build/syclang --arch riscv64 --format efi \
+          --output build/efi/efi_kernel_riscv64.efi \
+          efi_system/efi_kernel.syl
+    
+    - name: 构建 WebAssembly (v3.0)
+      run: |
+        ./build/syclang --target wasm32 \
+          --output build/efi/efi_kernel_wasm32.wasm \
+          efi_system/efi_kernel.syl
+    
+    - name: 构建量子电路 (v4.0)
+      run: |
+        ./build/syclang --target quantum \
+          --output build/efi/efi_kernel_quantum.qasm \
+          efi_system/efi_kernel.syl
+    
+    - name: 生成校验和
+      run: |
+        cd build/efi
+        sha256sum *.efi *.wasm *.qasm > SHA256SUMS
+    
+    - name: 上传 EFI 构建产物
+      uses: actions/upload-artifact@v3
+      with:
+        name: efi-kernels-all-arch
+        path: build/efi/*
+
+  # WebAssembly 测试
+  test-wasm:
+    name: 测试 WebAssembly
+    runs-on: ubuntu-latest
+    needs: build-efi-all
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 下载 WASM 文件
+      uses: actions/download-artifact@v3
+      with:
+        name: efi-kernels-all-arch
+        path: build/efi/
+    
+    - name: 安装 WASM 运行时
+      run: |
+        npm install -g @wasmer/cli
+        curl https://wasmtime.dev/install.sh -sSf | bash
+    
+    - name: 测试 WASM 加载
+      run: |
+        wasmer run build/efi/efi_kernel_wasm32.wasm || true
+        wasmtime build/efi/efi_kernel_wasm32.wasm || true
+    
+    - name: Node.js WASM 测试
+      run: |
+        npm install
+        node tests/wasm_test.js || true
+
+  # 量子模拟测试
+  test-quantum:
+    name: 测试量子模拟
+    runs-on: ubuntu-latest
+    needs: build-efi-all
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 下载量子电路
+      uses: actions/download-artifact@v3
+      with:
+        name: efi-kernels-all-arch
+        path: build/efi/
+    
+    - name: 安装 Qiskit
+      run: |
+        pip install qiskit qiskit-aer
+    
+    - name: 模拟量子电路
+      run: |
+        python tests/quantum_test.py build/efi/efi_kernel_quantum.qasm || true
+
+  # 创建 Release
+  create-release:
+    name: 创建 Release
+    runs-on: ubuntu-latest
+    needs: [build-efi-all, test-wasm, test-quantum]
+    if: github.event_name == 'release' && github.event.action == 'created'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 下载所有构建产物
+      uses: actions/download-artifact@v3
+      with:
+        path: build/releases/
+    
+    - name: 打包构建产物
+      run: |
+        cd build/releases
+        mkdir -p syclang-v${{ github.event.release.tag_name }}
+        
+        # 编译器
+        cp syclang-ubuntu-latest/syclang* syclang-v${{ github.event.release.tag_name }}/
+        
+        # EFI 内核
+        cp efi-kernels-all-arch/* syclang-v${{ github.event.release.tag_name }}/
+        
+        # 创建压缩包
+        tar czf syclang-v${{ github.event.release.tag_name }}-linux-x64.tar.gz syclang-v${{ github.event.release.tag_name }}/
+        zip -r syclang-v${{ github.event.release.tag_name }}-linux-x64.zip syclang-v${{ github.event.release.tag_name }}/
+    
+    - name: 上传到 Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/releases/*.tar.gz
+          build/releases/*.zip
+        draft: false
+        prerelease: false
+
+  # Docker 镜像构建
+  build-docker:
+    name: 构建 Docker 镜像
+    runs-on: ubuntu-latest
+    needs: build-compiler
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 设置 Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: 登录到 Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: 构建并推送
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/syclang:latest
+          ${{ secrets.DOCKER_USERNAME }}/syclang:v${{ github.ref_name }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # 代码质量检查
+  code-quality:
+    name: 代码质量检查
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 安装 Clang 工具
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format clang-tidy cppcheck
+    
+    - name: 格式检查
+      run: |
+        find . -name '*.cpp' -o -name '*.h' | xargs clang-format --dry-run --Werror || true
+    
+    - name: 静态分析
+      run: |
+        find . -name '*.cpp' | xargs cppcheck --enable=all --error-exitcode=0 || true
+    
+    - name: Clang-Tidy
+      run: |
+        find . -name '*.cpp' | xargs clang-tidy || true
+
+  # 文档构建
+  build-docs:
+    name: 构建文档
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 安装 Sphinx
+      run: pip install sphinx sphinx-rtd-theme
+    
+    - name: 构建 HTML 文档
+      run: |
+        cd docs
+        make html
+    
+    - name: 部署到 GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/_build/html

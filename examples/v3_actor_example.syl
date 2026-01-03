@@ -1,0 +1,226 @@
+// SysLang v3.0 - Actor 模型示例
+// 演示分布式系统原语的使用
+
+// 定义任务结构
+struct 任务 [Task] {
+    id: i32
+    data: string
+    priority: i32
+}
+
+// 定义 Worker Actor
+#[演员]
+#[邮箱容量(1000)]
+#[超时(5秒)]
+struct WorkerActor [工作演员] {
+    task_count: i32
+    total_time: f64
+    
+    #[初始化]
+    fn new() -> WorkerActor [创建工作演员] {
+        返回 WorkerActor {
+            task_count: 0,
+            total_time: 0.0
+        };
+    }
+    
+    #[消息处理]
+    fn handle_task(task: 任务) -> string [处理任务] {
+        let start = 时间::now();
+        
+        // 处理任务
+        println("处理任务 {}: {}", task.id, task.data);
+        处理逻辑(task.data);
+        
+        let elapsed = 时间::elapsed_since(start);
+        self.total_time += elapsed;
+        self.task_count += 1;
+        
+        返回 format!("任务 {} 完成", task.id);
+    }
+    
+    #[消息处理]
+    fn get_stats() -> (i32, f64) [获取统计信息] {
+        返回 (self.task_count, self.total_time);
+    }
+    
+    fn 处理逻辑(data: string) {
+        // 模拟处理
+        睡眠(100毫秒);
+    }
+}
+
+// 定义 Master Actor
+#[演员]
+#[邮箱容量(500)]
+struct MasterActor [主控演员] {
+    workers: vector<ActorRef>
+    completed_tasks: i32
+    
+    #[初始化]
+    fn new(workers: vector<ActorRef>) -> MasterActor [创建主控演员] {
+        返回 MasterActor {
+            workers: workers,
+            completed_tasks: 0
+        };
+    }
+    
+    #[消息处理]
+    fn distribute_tasks(tasks: vector<任务>) {
+        for i in 0..tasks.长度 {
+            let worker_index = i % self.workers.长度;
+            self.workers[worker_index].发送("handle_task", tasks[i]);
+        }
+    }
+    
+    #[消息处理]
+    fn task_completed(result: string) {
+        self.completed_tasks += 1;
+        println("任务完成: {}", result);
+        
+        如果 self.completed_tasks >= 100 {
+            self.print_statistics();
+        }
+    }
+    
+    fn print_statistics() {
+        println("所有任务完成！");
+        
+        for worker in self.workers {
+            let (count, time) = worker.发送同步("get_stats", ());
+            println("演员处理了 {} 个任务，总时间: {} 秒", count, time);
+        }
+    }
+}
+
+// 分布式锁示例
+#[分布式锁(超时 = 30秒)]
+fn 关键资源操作() [关键资源操作] {
+    自动解锁 {
+        // 互斥代码块
+        共享资源.修改();
+        数据库.提交事务();
+    }
+}
+
+// RPC 服务示例
+#[RPC服务]
+#[序列化格式(ProtocolBuffers)]
+#[传输协议(gRPC)]
+struct 用户服务 [用户服务] {
+    
+    #[RPC方法]
+    fn get_user(id: i32) -> 用户 [获取用户] {
+        返回 数据库::查询(id);
+    }
+    
+    #[RPC方法]
+    fn create_user(user: 用户) -> i32 [创建用户] {
+        返回 数据库::插入(user);
+    }
+    
+    #[RPC方法]
+    fn update_user(user: 用户) -> bool [更新用户] {
+        返回 数据库::更新(user);
+    }
+}
+
+// Actor 使用示例
+fn main() -> i32 {
+    // 创建 Actor 系统
+    let system = ActorSystem::new("系统示例");
+    
+    // 创建 Worker Actors
+    let workers: vector<ActorRef> = [];
+    for i in 0..5 {
+        let worker = system.创建演员(WorkerActor::new);
+        workers.添加(worker);
+    }
+    
+    // 创建 Master Actor
+    let master = system.创建演员(actors::MasterActor::new, workers);
+    
+    // 生成任务
+    let tasks: vector<任务> = [];
+    for i in 0..100 {
+        tasks.添加(任务 {
+            id: i,
+            data: format!("数据 {}", i),
+            priority: i % 10
+        });
+    }
+    
+    // 分发任务
+    master.发送("distribute_tasks", tasks);
+    
+    // 等待完成
+    睡眠(15秒);
+    
+    // 使用分布式锁
+    关键资源操作();
+    
+    // 关闭系统
+    system.关闭();
+    
+    返回 0;
+}
+
+// 事件驱动示例
+#[事件总线]
+struct EventBus [事件总线] {
+    
+    #[事件发布者]
+    fn 发布<T: 事件>(event: T) [发布事件] {
+        EventManager::emit(event);
+    }
+    
+    #[事件订阅者]
+    fn 订阅<T: 事件>(handler: fn(T)) [订阅事件] {
+        EventManager::on<T>(handler);
+    }
+}
+
+#[事件]
+struct 用户登录事件 [用户登录事件] {
+    user_id: i32
+    timestamp: i64
+    ip_address: string
+}
+
+fn 事件示例() {
+    // 订阅事件
+    EventBus::订阅(用户登录事件, |event| {
+        println("用户 {} 从 {} 登录", event.user_id, event.ip_address);
+        
+        // 记录日志
+        日志::信息("用户登录", event);
+        
+        // 发送通知
+        通知服务::发送欢迎邮件(event.user_id);
+        
+        // 更新统计
+        统计服务::记录登录(event.user_id);
+    });
+    
+    // 发布事件
+    EventBus::发布(用户登录事件 {
+        user_id: 12345,
+        timestamp: 时间::now_timestamp(),
+        ip_address: "192.168.1.100"
+    });
+}
+
+// 异步管道示例
+fn 异步数据处理() {
+    let data = [1..1000];
+    
+    let result = data
+        |> 并行映射(|x| x * x)
+        |> 并行过滤(|x| x > 5000)
+        |> 并行归约((a, b) => a + b, 0)
+        |> 异步转换(|sum| format!("总和: {}", sum));
+    
+    // 等待结果
+    let final_result = 等待(result);
+    println(final_result);
+}
