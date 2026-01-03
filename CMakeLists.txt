@@ -17,16 +17,22 @@ endif()
 set(LIB_SOURCES
     src/lexer/lexer.cpp
     src/lexer/token.cpp
+    src/lexer/chinese_lexer.cpp
     src/parser/parser.cpp
     src/parser/ast.cpp
+    src/parser/chinese_validation.cpp
     src/ir/ir_generator.cpp
     src/ir/ir.cpp
+    src/ir/platform_generator.cpp
     src/codegen/codegen_base.cpp
     src/codegen/arm64/arm64_codegen.cpp
     src/codegen/x64/x64_codegen.cpp
+    src/codegen/x86/x86_codegen.cpp
+    src/codegen/macos/macos_codegen.cpp
     src/codegen/inline_assembly.cpp
     src/optimizer/optimizer.cpp
     src/symbol_table.cpp
+    src/utils/unicode_utils.cpp
 )
 
 set(MAIN_SOURCES

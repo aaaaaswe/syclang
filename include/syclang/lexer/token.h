@@ -7,17 +7,26 @@ namespace syclang {
 
 enum class TokenType {
     // Keywords
-    KW_FN, KW_LET, KW_MUT, KW_IF, KW_ELSE, KW_WHILE, KW_FOR,
-    KW_RETURN, KW_STRUCT, KW_ENUM, KW_UNION, KW_EXTERN,
+    KW_FN, KW_LET, KW_MUT, KW_CONST,
+    KW_IF, KW_ELSE, KW_WHILE, KW_FOR,
+    KW_RETURN, KW_STRUCT, KW_ENUM, KW_UNION,
+    KW_TRAIT, KW_IMPL,
     KW_TRUE, KW_FALSE, KW_NULL,
-    KW_ASM, KW_VOLATILE, KW_ALIGN, KW_PACKED,
+    KW_ASM, KW_VOLATILE,
+    KW_ASYNC, KW_AWAIT, KW_MATCH,
     
     // Types
     TYPE_I8, TYPE_I16, TYPE_I32, TYPE_I64,
     TYPE_U8, TYPE_U16, TYPE_U32, TYPE_U64,
     TYPE_F32, TYPE_F64,
-    TYPE_BOOL, TYPE_VOID,
+    TYPE_BOOL, TYPE_VOID, TYPE_CHAR, TYPE_STRING,
     TYPE_PTR, TYPE_ARRAY,
+    
+    // Smart pointers
+    TYPE_UNIQUE_PTR, TYPE_SHARED_PTR, TYPE_WEAK_PTR,
+    
+    // Containers
+    TYPE_VECTOR, TYPE_MAP, TYPE_SET,
     
     // Identifiers and Literals
     IDENTIFIER,
@@ -42,11 +51,23 @@ enum class TokenType {
     BIT_AND, BIT_OR, BIT_XOR, BIT_NOT,
     SHL, SHR,
     
+    // New operators
+    PIPE, // |> for pipeline
+    RANGE, // .. for ranges
+    SPREAD, // ... for spread
+    
     // Delimiters
     LPAREN, RPAREN, LBRACE, RBRACE,
     LBRACKET, RBRACKET,
     SEMICOLON, COLON, COMMA, DOT,
     ARROW, FAT_ARROW, QUESTION,
+    
+    // Attributes
+    AT_SIGN, // # for attributes
+    
+    // Chinese comment markers
+    CHINESE_COMMENT_START, // [
+    CHINESE_COMMENT_END,   // ]
     
     // Special
     EOF_TOKEN,
@@ -67,6 +88,13 @@ public:
     
     bool is(TokenType type) const { return type_ == type; }
     
+    // 新增：检查是否是中文关键字
+    bool isChineseKeyword() const;
+    
+    // 新增：获取中文描述（如果有）
+    std::string getChineseDescription() const { return chineseDescription_; }
+    void setChineseDescription(const std::string& desc) { chineseDescription_ = desc; }
+    
     std::string toString() const;
 
 private:
@@ -74,6 +102,7 @@ private:
     std::string value_;
     size_t line_;
     size_t column_;
+    std::string chineseDescription_; // 中文描述注释
 };
 
 } // namespace syclang
