@@ -96,12 +96,36 @@ std::shared_ptr<FunctionDecl> Parser::parseFunctionDecl() {
     func->name = nameToken.value();
     
     // Parameters
-    consume(TokenType::LPAREN, "Expected '('");
+    if (!consume(TokenType::LPAREN, "Expected '('")) {
+        return nullptr;
+    }
     
     while (!match(TokenType::RPAREN)) {
         Token paramName = current();
-        consume(TokenType::IDENTIFIER, "Expected parameter name");
-        consume(TokenType::COLON, "Expected ':'");
+        if (!consume(TokenType::IDENTIFIER, "Expected parameter name")) {
+            // Skip to next comma or closing parenthesis
+            while (!current().is(TokenType::COMMA) &&
+                   !current().is(TokenType::RPAREN) &&
+                   !current().is(TokenType::EOF_TOKEN)) {
+                advance();
+            }
+            if (match(TokenType::COMMA)) {
+                continue;
+            }
+            break;
+        }
+        if (!consume(TokenType::COLON, "Expected ':'")) {
+            // Skip to next comma or closing parenthesis
+            while (!current().is(TokenType::COMMA) &&
+                   !current().is(TokenType::RPAREN) &&
+                   !current().is(TokenType::EOF_TOKEN)) {
+                advance();
+            }
+            if (match(TokenType::COMMA)) {
+                continue;
+            }
+            break;
+        }
         auto paramType = parseType();
         
         func->params.push_back({paramName.value(), paramType});
@@ -112,8 +136,16 @@ std::shared_ptr<FunctionDecl> Parser::parseFunctionDecl() {
     }
     
     // Return type
-    consume(TokenType::ARROW, "Expected '->'");
-    func->returnType = parseType();
+    if (!consume(TokenType::ARROW, "Expected '->'")) {
+        // Try to parse anyway, but skip return type parsing
+        while (!current().is(TokenType::LBRACE) &&
+               !current().is(TokenType::KW_EXTERN) &&
+               !current().is(TokenType::EOF_TOKEN)) {
+            advance();
+        }
+    } else {
+        func->returnType = parseType();
+    }
     
     // Function body or extern
     if (match(TokenType::KW_EXTERN)) {
@@ -204,13 +236,35 @@ std::shared_ptr<Statement> Parser::parseStatement() {
         return parseBlock();
     }
     
-    return parseExprStmt();
+    // If we reach here, this might be an expression statement
+    // Try to parse it as an expression, but handle errors gracefully
+    auto exprStmt = parseExprStmt();
+    if (!exprStmt->expr) {
+        // If parsing failed, skip to the next semicolon or other delimiter
+        while (!current().is(TokenType::SEMICOLON) &&
+               !current().is(TokenType::RBRACE) &&
+               !current().is(TokenType::EOF_TOKEN)) {
+            advance();
+        }
+        if (match(TokenType::SEMICOLON)) {
+            // Consumed semicolon
+        }
+    }
+    return exprStmt;
 }
 
 std::shared_ptr<BlockStmt> Parser::parseBlock() {
     auto block = std::make_shared<BlockStmt>();
     
     if (!consume(TokenType::LBRACE, "Expected '{'")) {
+        // Skip to the next closing brace to avoid infinite loop
+        while (!current().is(TokenType::RBRACE) &&
+               !current().is(TokenType::EOF_TOKEN)) {
+            advance();
+        }
+        if (match(TokenType::RBRACE)) {
+            // Consumed closing brace
+        }
         return nullptr;
     }
     
@@ -232,7 +286,16 @@ std::shared_ptr<LetStmt> Parser::parseLet() {
     let->isMutable = match(TokenType::KW_MUT);
     
     Token nameToken = current();
-    consume(TokenType::IDENTIFIER, "Expected variable name");
+    if (!consume(TokenType::IDENTIFIER, "Expected variable name")) {
+        // Skip to next semicolon
+        while (!current().is(TokenType::SEMICOLON) &&
+               !current().is(TokenType::RBRACE) &&
+               !current().is(TokenType::EOF_TOKEN)) {
+            advance();
+        }
+        consume(TokenType::SEMICOLON, "Expected ';'");
+        return nullptr;
+    }
     let->name = nameToken.value();
     
     if (match(TokenType::COLON)) {
@@ -251,7 +314,19 @@ std::shared_ptr<LetStmt> Parser::parseLet() {
 std::shared_ptr<ExprStmt> Parser::parseExprStmt() {
     auto stmt = std::make_shared<ExprStmt>();
     stmt->expr = parseExpression();
-    consume(TokenType::SEMICOLON, "Expected ';'");
+    if (stmt->expr) {
+        consume(TokenType::SEMICOLON, "Expected ';'");
+    } else {
+        // Skip to next semicolon or other statement delimiter
+        while (!current().is(TokenType::SEMICOLON) &&
+               !current().is(TokenType::RBRACE) &&
+               !current().is(TokenType::EOF_TOKEN)) {
+            advance();
+        }
+        if (match(TokenType::SEMICOLON)) {
+            // Consumed semicolon
+        }
+    }
     return stmt;
 }
 
@@ -592,6 +667,7 @@ std::shared_ptr<Expression> Parser::parsePrimary() {
     }
     
     error("Expected expression");
+    advance(); // Skip the problematic token to avoid infinite loop
     return nullptr;
 }
 
@@ -655,6 +731,7 @@ std::shared_ptr<Type> Parser::parseType() {
             break;
         default:
             error("Expected type");
+            advance(); // Skip the problematic token to avoid infinite loop
             return nullptr;
     }
     
