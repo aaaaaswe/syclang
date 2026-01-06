@@ -248,8 +248,8 @@ Token Lexer::peekToken(size_t offset) {
     size_t savedLine = line_;
     size_t savedCol = column_;
     
-    Token token = *this;
-    for (size_t i = 0; i <= offset && !token.is(TokenType::EOF_TOKEN); ++i) {
+    Token token = nextToken();
+    for (size_t i = 0; i < offset && !token.is(TokenType::EOF_TOKEN); ++i) {
         token = nextToken();
     }
     

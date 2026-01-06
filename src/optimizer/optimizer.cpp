@@ -1,5 +1,7 @@
 #include "syclang/optimizer/optimizer.h"
 #include <iostream>
+#include <algorithm>
+#include <unordered_set>
 
 namespace syclang {
 

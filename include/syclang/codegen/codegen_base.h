@@ -1,7 +1,7 @@
 #ifndef SYCLANG_CODEGEN_CODEGEN_BASE_H
 #define SYCLANG_CODEGEN_CODEGEN_BASE_H
 
-#include "ir/ir.h"
+#include "syclang/ir/ir.h"
 #include <memory>
 #include <string>
 #include <vector>

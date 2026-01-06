@@ -3,8 +3,9 @@
 
 #include <memory>
 #include <vector>
-#include "lexer/lexer.h"
-#include "ast.h"
+#include "syclang/lexer/lexer.h"
+#include "syclang/lexer/token.h"
+#include "syclang/parser/ast.h"
 
 namespace syclang {
 

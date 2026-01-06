@@ -1,8 +1,8 @@
 #ifndef SYCLANG_IR_IR_GENERATOR_H
 #define SYCLANG_IR_IR_GENERATOR_H
 
-#include "ir.h"
-#include "parser/ast.h"
+#include "syclang/ir/ir.h"
+#include "syclang/parser/ast.h"
 #include <map>
 #include <memory>
 #include <string>

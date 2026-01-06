@@ -1,7 +1,7 @@
 #ifndef SYCLANG_CODEGEN_INLINE_ASSEMBLY_H
 #define SYCLANG_CODEGEN_INLINE_ASSEMBLY_H
 
-#include "ir/ir.h"
+#include "syclang/ir/ir.h"
 #include <string>
 #include <vector>
 

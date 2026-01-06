@@ -1,7 +1,7 @@
 #ifndef SYCLANG_IR_PLATFORM_GENERATOR_H
 #define SYCLANG_IR_PLATFORM_GENERATOR_H
 
-#include "ir/ir.h"
+#include "syclang/ir/ir.h"
 #include <string>
 #include <memory>
 

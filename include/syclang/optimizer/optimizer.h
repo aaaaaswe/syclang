@@ -1,7 +1,7 @@
 #ifndef SYCLANG_OPTIMIZER_OPTIMIZER_H
 #define SYCLANG_OPTIMIZER_OPTIMIZER_H
 
-#include "ir/ir.h"
+#include "syclang/ir/ir.h"
 #include <memory>
 #include <set>
 #include <map>

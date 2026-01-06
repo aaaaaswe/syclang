@@ -1,12 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include "syclang/lexer/lexer.h"
 #include "syclang/parser/parser.h"
 #include "syclang/ir/ir_generator.h"
 #include "syclang/codegen/x64/x64_codegen.h"
 #include "syclang/codegen/arm64/arm64_codegen.h"
 #include "syclang/ir/ir.h"
+
+using namespace syclang;
 
 void printUsage(const char* programName) {
     std::cout << "Usage: " << programName << " [OPTIONS] <input_file>\n"

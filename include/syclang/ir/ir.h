@@ -56,6 +56,9 @@ public:
         double floatValue;
     } value_;
     
+    IRConstant() : IRValue() {}
+    explicit IRConstant(IRType type) : IRValue(type) {}
+    
     static std::shared_ptr<IRConstant> createI32(int32_t value);
     static std::shared_ptr<IRConstant> createI64(int64_t value);
     static std::shared_ptr<IRConstant> createU32(uint32_t value);
@@ -73,6 +76,9 @@ public:
     int registerNum;
     bool isGlobal;
     int offset; // Stack offset for locals
+    
+    IRVariable() : IRValue() {}
+    explicit IRVariable(IRType type) : IRValue(type) {}
     
     static std::shared_ptr<IRVariable> create(IRType type, const std::string& name);
     

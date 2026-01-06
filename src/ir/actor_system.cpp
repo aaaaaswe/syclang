@@ -8,6 +8,9 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <cstring>
+#include <sys/stat.h>
+#include <stdio.h>
 
 namespace syclang {
 namespace ir {

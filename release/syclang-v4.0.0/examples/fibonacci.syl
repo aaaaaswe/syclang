@@ -1,0 +1,21 @@
+// Fibonacci sequence in SysLang
+
+fn fibonacci(n: i32) -> i32 {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fn main() -> i32 {
+    let n: i32 = 10;
+    let result: i32 = fibonacci(n);
+    
+    print("Fibonacci(");
+    print_int(n);
+    print(") = ");
+    print_int(result);
+    print("\n");
+    
+    return 0;
+}

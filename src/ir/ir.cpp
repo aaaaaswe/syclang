@@ -3,6 +3,27 @@
 
 namespace syclang {
 
+// IRType 输出操作符
+std::ostream& operator<<(std::ostream& os, IRType type) {
+    switch (type) {
+        case IRType::I8: os << "i8"; break;
+        case IRType::I16: os << "i16"; break;
+        case IRType::I32: os << "i32"; break;
+        case IRType::I64: os << "i64"; break;
+        case IRType::U8: os << "u8"; break;
+        case IRType::U16: os << "u16"; break;
+        case IRType::U32: os << "u32"; break;
+        case IRType::U64: os << "u64"; break;
+        case IRType::F32: os << "f32"; break;
+        case IRType::F64: os << "f64"; break;
+        case IRType::BOOL: os << "bool"; break;
+        case IRType::VOID: os << "void"; break;
+        case IRType::POINTER: os << "ptr"; break;
+        default: os << "unknown"; break;
+    }
+    return os;
+}
+
 size_t IRValue::getSize() const {
     switch (type_) {
         case IRType::I8:

@@ -1,7 +1,7 @@
 #ifndef SYCLANG_CODEGEN_X64_X64_CODEGEN_H
 #define SYCLANG_CODEGEN_X64_X64_CODEGEN_H
 
-#include "codegen/codegen_base.h"
+#include "syclang/codegen/codegen_base.h"
 #include <string>
 
 namespace syclang {

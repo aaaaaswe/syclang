@@ -1,7 +1,8 @@
 #ifndef SYCLANG_LEXER_CHINESE_LEXER_H
-#define SYCLANG_LEXER_CHINESE_LEXER_H
+#define SYSLANG_LEXER_CHINESE_LEXER_H
 
-#include "lexer/lexer.h"
+#include "syclang/lexer/lexer.h"
+#include "syclang/lexer/token.h"
 #include <string>
 #include <unordered_map>
 

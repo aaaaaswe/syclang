@@ -1,0 +1,260 @@
+// SysLang v3.0 - WebAssembly 示例
+// 演示 WebAssembly 编译和 JavaScript 互操作
+
+#[导出到WebAssembly]
+#[内存限制(16MB)]
+#[堆大小(8MB)]
+// 斐波那契数列（将被编译到 WebAssembly）
+fn fibonacci(n: i32) -> i32 [斐波那契数列] {
+    如果 n <= 1 {
+        返回 n;
+    }
+    返回 fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+#[导出到WebAssembly]
+// 快速排序
+fn quick_sort(arr: &[i32]) -> vector<i32> [快速排序] {
+    如果 arr.长度 <= 1 {
+        返回 arr.to_vector();
+    }
+    
+    let pivot = arr[arr.长度 / 2];
+    let mut less: vector<i32> = [];
+    let mut equal: vector<i32> = [];
+    let mut greater: vector<i32> = [];
+    
+    for x in arr {
+        如果 x < pivot {
+            less.添加(x);
+        } 否则 如果 x == pivot {
+            equal.添加(x);
+        } 否则 {
+            greater.添加(x);
+        }
+    }
+    
+    let mut result = quick_sort(less);
+    result.extend(equal);
+    result.extend(quick_sort(greater));
+    
+    返回 result;
+}
+
+#[导出到WebAssembly]
+// 矩阵乘法
+fn matrix_multiply(a: &[f32], b: &[f32], n: i32) -> vector<f32> [矩阵乘法] {
+    let mut result: vector<f32> = vector::with_capacity(n * n);
+    
+    for i in 0..n {
+        for j in 0..n {
+            let mut sum: f32 = 0.0;
+            for k in 0..n {
+                sum += a[i * n + k] * b[k * n + j];
+            }
+            result.添加(sum);
+        }
+    }
+    
+    返回 result;
+}
+
+// 图像处理（灰度转换）
+#[导出到WebAssembly]
+fn grayscale(image: &[u8], width: i32, height: i32) -> vector<u8> [灰度转换] {
+    let mut result: vector<u8> = vector::with_capacity(width * height);
+    
+    for i in 0..(width * height) {
+        let r = image[i * 3] as f32;
+        let g = image[i * 3 + 1] as f32;
+        let b = image[i * 3 + 2] as f32;
+        
+        // 标准灰度公式
+        let gray = (0.299 * r + 0.587 * g + 0.114 * b) as u8;
+        result.添加(gray);
+    }
+    
+    返回 result;
+}
+
+// JavaScript 互操作示例
+#[JavaScript互操作]
+fn js_example() [JavaScript示例] {
+    // 调用 JavaScript 函数
+    调用JS("console.log", ["Hello from SysLang WebAssembly!"]);
+    
+    // 调用 JavaScript 函数并获取返回值
+    let random_num = 调用JS("Math.random", []);
+    println("随机数: {}", random_num);
+    
+    // 调用自定义 JavaScript 函数
+    let user_data = 调用JS("fetchUserData", ["user123"]);
+    println("用户数据: {}", user_data);
+    
+    // 注册 JavaScript 回调
+    注册JS回调("onMessage", |message| {
+        println("收到 JS 消息: {}", message);
+    });
+    
+    // 触发 JavaScript 事件
+    调用JS("document.dispatchEvent", ["customEvent", {data: "test"}]);
+}
+
+// 字符串处理
+#[导出到WebAssembly]
+fn reverse_string(s: string) -> string [反转字符串] {
+    let bytes = s.as_bytes();
+    let mut result: vector<u8> = [];
+    
+    for i in (0..bytes.长度).rev() {
+        result.添加(bytes[i]);
+    }
+    
+    返回 string::from_utf8(result);
+}
+
+#[导出到WebAssembly]
+fn count_words(text: string) -> i32 [统计单词数] {
+    let words = text.分割(' ');
+    返回 words.长度 as i32;
+}
+
+// 加密功能
+#[导出到WebAssembly]
+fn simple_hash(input: string) -> i32 [简单哈希] {
+    let mut hash: i32 = 0;
+    let bytes = input.as_bytes();
+    
+    for byte in bytes {
+        hash = ((hash << 5) - hash + (*byte as i32));
+    }
+    
+    返回 hash;
+}
+
+// 数据压缩
+#[导出到WebAssembly]
+fn rle_compress(data: &[u8]) -> vector<u8> [RLE压缩] {
+    let mut result: vector<u8> = [];
+    let mut i = 0;
+    
+    while i < data.长度 {
+        let current = data[i];
+        let mut count: u8 = 1;
+        
+        while i + count < data.长度 && count < 255 && data[i + count] == current {
+            count += 1;
+        }
+        
+        result.添加(count);
+        result.添加(current);
+        i += count as usize;
+    }
+    
+    返回 result;
+}
+
+// 游戏逻辑（粒子系统）
+struct 粒子 [Particle] {
+    x: f32
+    y: f32
+    vx: f32
+    vy: f32
+    life: f32
+}
+
+#[导出到WebAssembly]
+fn update_particles(particles: &mut [粒子], dt: f32) [更新粒子] {
+    for i in 0..particles.长度 {
+        particles[i].x += particles[i].vx * dt;
+        particles[i].y += particles[i].vy * dt;
+        particles[i].life -= dt;
+        
+        // 简单的边界反弹
+        如果 particles[i].x < 0.0 || particles[i].x > 800.0 {
+            particles[i].vx *= -1.0;
+        }
+        如果 particles[i].y < 0.0 || particles[i].y > 600.0 {
+            particles[i].vy *= -1.0;
+        }
+    }
+}
+
+// 音频处理（FFT 简化版）
+#[导出到WebAssembly]
+fn simple_fft(input: &[f32]) -> vector<f32> [简化FFT] {
+    let n = input.长度;
+    let mut output: vector<f32> = vector::with_capacity(n);
+    
+    // 简化的 DFT 实现
+    for k in 0..n {
+        let mut real: f32 = 0.0;
+        let mut imag: f32 = 0.0;
+        
+        for i in 0..n {
+            let angle = 2.0 * 3.14159 * (k as f32) * (i as f32) / (n as f32);
+            real += input[i] * angle.cos();
+            imag -= input[i] * angle.sin();
+        }
+        
+        // 幅度
+        output.添加((real * real + imag * imag).sqrt());
+    }
+    
+    返回 output;
+}
+
+// Web Worker 集成
+#[导出到WebAssembly]
+#[可并行]
+fn parallel_sum(numbers: &[i32], num_workers: i32) -> i32 [并行求和] {
+    let chunk_size = numbers.长度 / num_workers;
+    let mut sums: vector<i32> = vector::with_capacity(num_workers);
+    
+    for worker_id in 0..num_workers {
+        let start = worker_id * chunk_size;
+        let end = 如果 worker_id == num_workers - 1 {
+            numbers.长度
+        } 否则 {
+            start + chunk_size
+        };
+        
+        let sum = 0;
+        for i in start..end {
+            sum += numbers[i];
+        }
+        sums.添加(sum);
+    }
+    
+    // 合并结果
+    let mut total = 0;
+    for s in sums {
+        total += s;
+    }
+    
+    返回 total;
+}
+
+// 主函数（浏览器中通常不使用）
+fn main() -> i32 {
+    // 测试斐波那契
+    let fib_result = fibonacci(10);
+    println("Fibonacci(10) = {}", fib_result);
+    
+    // 测试快速排序
+    let arr = [5, 2, 8, 1, 9, 3, 7, 4, 6];
+    let sorted = quick_sort(&arr);
+    println("排序结果: {:?}", sorted);
+    
+    // 测试灰度转换
+    let image_data = [255u8, 0, 0,  // 红
+                      0, 255, 0,    // 绿
+                      0, 0, 255];   // 蓝
+    let gray = grayscale(&image_data, 1, 3);
+    println("灰度结果: {:?}", gray);
+    
+    返回 0;
+}
+
+// 编译命令示例：
+// syclang --target wasm32 --output fibonacci.wasm --js-wrapper examples/v3_wasm_wrapper.js v3_wasm_example.syl

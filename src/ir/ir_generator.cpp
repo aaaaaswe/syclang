@@ -119,8 +119,7 @@ void IRGenerator::generateStatement(std::shared_ptr<Statement> stmt) {
 }
 
 void IRGenerator::generateLet(std::shared_ptr<LetStmt> let) {
-    auto var = std::make_shared<IRVariable>(convertType(let->type));
-    var->name = let->name;
+    auto var = IRVariable::create(convertType(let->type), let->name);
     var->isGlobal = false;
     var->offset = currentFunction_->stackSize;
     
@@ -129,7 +128,7 @@ void IRGenerator::generateLet(std::shared_ptr<LetStmt> let) {
     allocaInst->result = var;
     currentBlock_->instructions.push_back(allocaInst);
     
-    currentFunction_->stackSize += var->type->getSize();
+    currentFunction_->stackSize += var->getSize();
     
     // Initialize if needed
     if (let->init) {

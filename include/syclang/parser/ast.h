@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "lexer/token.h"
+#include "syclang/lexer/token.h"
 
 namespace syclang {
 
@@ -32,6 +32,7 @@ public:
     std::shared_ptr<Type> baseType; // For pointers and arrays
     size_t arraySize; // For arrays
     
+    Type() : category(TypeCategory::VOID), arraySize(0) {}
     Type(TypeCategory cat) : category(cat), arraySize(0) {}
     
     size_t getSize() const;
