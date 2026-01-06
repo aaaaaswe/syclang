@@ -81,6 +81,7 @@ std::shared_ptr<Declaration> Parser::parseDeclaration() {
     }
     
     error("Expected function, struct, or enum declaration");
+    advance(); // Skip the problematic token to avoid infinite loop
     return nullptr;
 }
 
@@ -209,7 +210,9 @@ std::shared_ptr<Statement> Parser::parseStatement() {
 std::shared_ptr<BlockStmt> Parser::parseBlock() {
     auto block = std::make_shared<BlockStmt>();
     
-    consume(TokenType::LBRACE, "Expected '{'");
+    if (!consume(TokenType::LBRACE, "Expected '{'")) {
+        return nullptr;
+    }
     
     while (!current().is(TokenType::RBRACE) && !current().is(TokenType::EOF_TOKEN)) {
         auto stmt = parseStatement();
